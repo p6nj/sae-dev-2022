@@ -11,31 +11,30 @@
 #define BUFFER_SIZE 1024
 
 int main() {
-  int result; // various retrun value dispenser
-  int server_fd, client_fd;
-  struct sockaddr_in addr;
+  int sockfd, client_fd;
+  struct sockaddr_in serv_addr;
   FILE *file;
 
   // Create the server socket
-  server_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (server_fd < 0)
+  sockfd = socket(PF_INET, SOCK_STREAM, 0);
+  if (sockfd < 0)
     throw(1);
 
   // Bind the socket to a local address
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = INADDR_ANY;
-  addr.sin_port = htons(PORT);
-  if (bind(server_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+  serv_addr.sin_family = AF_INET;
+  serv_addr.sin_addr.s_addr = INADDR_ANY;
+  serv_addr.sin_port = htons(PORT);
+  if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     throw(2);
 
-  // Listen for incoming connections
-  if (listen(server_fd, 1) < 0)
+  // Listen for n incoming connections
+  if (listen(sockfd, 1) < 0)
     throw(3);
 
   printf("Server listening on port %d...\n\x1B[32m", PORT);
 
-  // Accept an incoming connection
-  client_fd = accept(server_fd, NULL, NULL);
+  // Wait for an incoming connection
+  client_fd = accept(sockfd, NULL, NULL);
   if (client_fd < 0)
     throw(4);
 
@@ -54,14 +53,12 @@ int main() {
   printf("Data sent!\n");
 
   // Close the file and the client socket
-  result = fclose(file);
-  if (result != 0)
+  if (fclose(file) != 0)
     throw(6);
-  result = close(client_fd);
-  if (result != 0)
+  if (close(client_fd) != 0)
     throw(7);
 
-  printf("Streams closed, goodbye!");
+  printf("Streams closed, goodbye!\n");
 
   return 0;
 }
