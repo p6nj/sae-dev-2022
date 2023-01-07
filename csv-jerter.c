@@ -1,4 +1,5 @@
 #include "errors.c"
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -12,8 +13,12 @@
 
 int main() {
   int sockfd, client_fd;
+  unsigned int clilen;
   struct sockaddr_in serv_addr;
+  struct sockaddr cli_addr;
   FILE *file;
+  char buffer[BUFFER_SIZE];
+  char filename[BUFFER_SIZE];
 
   // Create the server socket
   sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -34,23 +39,31 @@ int main() {
   printf("Server listening on port %d...\n\x1B[32m", PORT);
 
   // Wait for an incoming connection
-  client_fd = accept(sockfd, NULL, NULL);
+  clilen = sizeof(serv_addr);
+  client_fd = accept(sockfd, &cli_addr, &clilen);
   if (client_fd < 0)
     throw(4);
 
-  printf("Client connected!\n");
+  printf("Client connected with IP %s!\n",
+         inet_ntoa(((struct sockaddr_in *)&cli_addr)->sin_addr));
+
+  // Read the filename from the client
+  if (read(client_fd, buffer, BUFFER_SIZE) < 0)
+    throw(8);
+  buffer[strlen(buffer) - 2] =
+      '\0'; // remove last dumb char that causes problems WITH TELNET
+  sprintf(filename, "CSV/%s.csv", strtok(buffer, " "));
 
   // Open the CSV file
-  file = fopen("CSV/RT2FA.csv", "r");
+  file = fopen(filename, "r");
   if (file == NULL)
     throw(5);
 
   // Read the file and send its contents to the client
-  char buffer[BUFFER_SIZE];
   while (fgets(buffer, BUFFER_SIZE, file) != NULL)
     send(client_fd, buffer, strlen(buffer), 0);
 
-  printf("Data sent!\n");
+  printf("%s sent!\n", filename);
 
   // Close the file and the client socket
   if (fclose(file) != 0)

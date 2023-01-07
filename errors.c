@@ -22,6 +22,8 @@ char *desc(int code) {
     return "closing file stream";
   case 7:
     return "closing file descriptor";
+  case 8:
+    return "reading filename from the client";
   default:
     return "(no description available)";
   }
