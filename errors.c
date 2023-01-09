@@ -29,8 +29,8 @@ char *desc(int code) {
   }
 }
 
-void throw(int code) {
+int throw(int code) {
   if (VERBOSE)
     fprintf(stderr, FORMAT, desc(code));
-  exit(code);
+  return(code);
 }
