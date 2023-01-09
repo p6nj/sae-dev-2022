@@ -7,7 +7,6 @@
 #include <strings.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#define THROW(desc, code) return throw(desc, code);
 #define NTHROW(desc, code)                                                     \
   {                                                                            \
     close(sockfd);                                                             \
