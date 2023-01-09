@@ -1,18 +1,14 @@
+#include "preferences.c"
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#define PORT 8888
-#define BUFSIZE 1024
-
 int main(int argc, char *argv[]) {
   int sockfd;
   struct sockaddr_in servaddr;
-  char buf[BUFSIZE];
+  char buf[BUFFER_SIZE];
   int n;
 
   // Vérification des arguments de la ligne de commande
@@ -36,9 +32,9 @@ int main(int argc, char *argv[]) {
   write(sockfd, argv[1], strlen(argv[1]));
 
   // Réception et affichage du contenu du fichier
-  while ((n = read(sockfd, buf, BUFSIZE)) > 0) {
+  while ((n = read(sockfd, buf, BUFFER_SIZE)) > 0) {
     buf[n] = '\0';
-    printf("%s\n", buf);
+    printf("%s", buf);
   }
 
   // Fermeture de la connexion
