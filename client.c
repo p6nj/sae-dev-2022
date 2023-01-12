@@ -2,6 +2,7 @@
 #include "preferences.c"
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -43,6 +44,8 @@ int main(int argc, char *argv[]) {
 
   // Fermeture de la connexion
   close(sockfd);
+
+  printf("\n");
 
   return 0;
 }

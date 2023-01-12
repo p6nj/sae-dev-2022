@@ -94,7 +94,7 @@ int main() {
     n = strlen(name);
     if (!filename_ok(name)) {
       char temp[strlen(name) + 40];
-      sprintf(temp, "parsing filename (illegal filename '%s')", name);
+      sprintf(temp, "parsing file name (illegal filename)");
       NTHROW(temp, 403);
     }
     mode[0] = name[n - 1];
