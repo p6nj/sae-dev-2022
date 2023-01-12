@@ -49,8 +49,9 @@ int main() {
   struct sockaddr cli_addr;
   FILE *file;
   char buffer[BUFFER_SIZE], filename[BUFFER_SIZE];
-  char mode;             // access mode (read or write) for the destination file
+  char mode[2];          // access mode (read or write) for the destination file
   char folder[] = "CSV"; // name of the folder to save or read file
+  char name[BUFFER_SIZE];
 
   // Create the server socket
   sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -75,6 +76,7 @@ int main() {
 
   // Wait for an incoming connection
   clilen = sizeof(serv_addr);
+  mode[1] = '\0';
   while (1) {
     client_fd = accept(sockfd, &cli_addr, &clilen);
     if (client_fd < 0)
@@ -87,15 +89,20 @@ int main() {
     n = read(client_fd, buffer, BUFFER_SIZE);
     if (n < 0)
       NTHROW("reading filename from the client", 8);
-    buffer[n] = '\0'; // remove last dumb char that causes problems WITH TELNET
-    if (!filename_ok(filename)) {
-      NTHROW("parsing filename (illegal filename)", 403)
+    buffer[n] = '\0'; // remove last dumb char that causes problems
+    sprintf(name, "%s", strtok(buffer, ""));
+    n = strlen(name);
+    if (!filename_ok(name)) {
+      char temp[strlen(name) + 40];
+      sprintf(temp, "parsing filename (illegal filename '%s')", name);
+      NTHROW(temp, 403);
     }
-    mode = filename[n - 1];
-    if (mode == 'w') {
+    mode[0] = name[n - 1];
+    if (mode[0] == 'w') {
       folder[0] = 'O';
     }
-    sprintf(filename, "%s/%s.csv", folder, strtok(buffer, " "));
+    name[n - 1] = '\0';
+    sprintf(filename, "%s/%s.csv", folder, name);
 
     // Open the CSV file
     file = fopen(filename, mode);
