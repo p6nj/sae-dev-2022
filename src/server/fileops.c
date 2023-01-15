@@ -6,8 +6,10 @@
  * On Windows you also have to check for '\'.
  * The filename is considered right only if it's just a name (no extension).
  */
-bool filename_ok(char filename[]) {
-  switch (filename[0]) {
+bool filename_ok(char filename[])
+{
+  switch (filename[0])
+  {
   case '.':
     return false;
   case '/':
@@ -19,7 +21,8 @@ bool filename_ok(char filename[]) {
   if (strchr(filename, '/') != NULL)
     return false;
   // the access mode must be present at the end and can either be read or write
-  switch (filename[strlen(filename) - 1]) {
+  switch (filename[strlen(filename) - 1])
+  {
   case 'w':
     return true;
   case 'r':

@@ -48,11 +48,49 @@ int sock()
 }
 
 // Wait for a connection, fill cliaddr with the client address and return 1.
-int wait(int sockfd, struct sockaddr *cliaddr)
+int wait(int sockfd, struct sockaddr *cliaddr, int *clientfd)
 {
     struct sockaddr_in a; // placeholder for sizeof
     unsigned int clilen = sizeof(a);
-    accept(sockfd, cliaddr, &clilen);
+    clientfd = accept(sockfd, cliaddr, &clilen);
     assertquit;
     return 1;
+}
+
+struct Result ask(clientfd)
+{
+    struct Result r;
+    char mode[2]; // read or write
+    char *folder = "CSV";
+    char name[BUFFER_SIZE], buffer[BUFFER_SIZE];
+    ssize_t n = read(clientfd, buffer, BUFFER_SIZE);
+    assert;
+    buffer[n] = '\0'; // remove last dumb char that causes problems
+    sprintf(name, "%s", strtok(buffer, ""));
+    n = strlen(name);
+    if (!test_filename(name))
+    {
+        errno = EACCES; // "Permission denied", can't access anything else
+    };
+
+    // ADD FILE OPERATION HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    r.code = 0;
+    strcpy(r.string, name);
+    return r;
+}
+
+void respond(clientfd)
+{
+    struct Result r = ask(clientfd);
+    char buffer[BUFFER_SIZE];
+    char response[strlen(r.string) + 5];
+    sprintf(response, "%d\n%s", r.code, r.string);
+    int i, j;
+    for (i = 0; i < strlen(response) - BUFFER_SIZE; i += BUFFER_SIZE)
+    {
+        j = BUFFER_SIZE;
+        while (--j)
+            buffer[j] = response[i + j];
+        send(clientfd, buffer, BUFFER_SIZE, 0);
+    }
 }
