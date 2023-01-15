@@ -1,89 +1,25 @@
-#include "errors.c"
-#include "preferences.c"
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#define NTHROW(desc, code)                                                     \
-  {                                                                            \
-    close(sockfd);                                                             \
-    return throw(desc, code);                                                  \
-  }
+#include "common.c"
+#include "src/server/fileops.c"
+#include "src/server/netops.c"
 
-/* Checks if a filename is right for the project format.
- * This will prevent clients from writting somewhere else than the provided
- * folder using either '..' or '/'.
- * On Windows you also have to check for '\'.
- * The filename is considered right only if it's just a name (no extension).
- */
-bool filename_ok(char filename[]) {
-  switch (filename[0]) {
-  case '.':
-    return false;
-  case '/':
-    return false;
-  default:;
-  }
-  if (strchr(filename, '.') != NULL)
-    return false;
-  if (strchr(filename, '/') != NULL)
-    return false;
-  // the access mode must be present at the end and can either be read or write
-  switch (filename[strlen(filename) - 1]) {
-  case 'w':
-    return true;
-  case 'r':
-    return true;
-  }
-  return false;
-}
+int main()
+{
 
-int main() {
-  int sockfd, client_fd, n, optval;
-  unsigned int clilen;
-  struct sockaddr_in serv_addr;
-  struct sockaddr cli_addr;
-  FILE *file;
-  char buffer[BUFFER_SIZE], filename[BUFFER_SIZE];
-  char mode[2];          // access mode (read or write) for the destination file
-  char folder[] = "CSV"; // name of the folder to save or read file
-  char name[BUFFER_SIZE];
+  int sockfd = sock();
+  struct sockaddr cliaddr;
 
-  // Create the server socket
-  sockfd = socket(PF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0)
-    THROW("creating socket", 1);
+  while (wait(sockfd, &cliaddr))
+  {
 
-  optval = 1;
-  setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
-
-  // Bind the socket to a local address
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_addr.s_addr = INADDR_ANY;
-  serv_addr.sin_port = htons(PORT);
-  if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    NTHROW("binding socket", 2);
-
-  // Listen for n incoming connections
-  if (listen(sockfd, 1) < 0)
-    NTHROW("listening for connections", 3);
-
-  printf("Server listening on port %d...\n\x1B[32m", PORT);
-
-  // Wait for an incoming connection
-  clilen = sizeof(serv_addr);
-  mode[1] = '\0';
-  while (1) {
-    client_fd = accept(sockfd, &cli_addr, &clilen);
-    if (client_fd < 0)
-      NTHROW("accepting connection", 4);
-
-    printf("Client connected with IP %s!\n",
-           inet_ntoa(((struct sockaddr_in *)&cli_addr)->sin_addr));
+    println("IP%s",
+            inet_ntoa(((struct sockaddr_in *)&cliaddr)->sin_addr));
 
     // Read the filename from the client
     n = read(client_fd, buffer, BUFFER_SIZE);
@@ -92,13 +28,15 @@ int main() {
     buffer[n] = '\0'; // remove last dumb char that causes problems
     sprintf(name, "%s", strtok(buffer, ""));
     n = strlen(name);
-    if (!filename_ok(name)) {
+    if (!filename_ok(name))
+    {
       char temp[strlen(name) + 40];
       sprintf(temp, "parsing file name (illegal filename)");
       NTHROW(temp, 403);
     }
     mode[0] = name[n - 1];
-    if (mode[0] == 'w') {
+    if (mode[0] == 'w')
+    {
       folder[0] = 'O';
     }
     name[n - 1] = '\0';
