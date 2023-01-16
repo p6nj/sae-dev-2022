@@ -1,4 +1,3 @@
-#include "../../common.c"
 #include "fileops.c"
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -9,7 +8,8 @@
 #include <unistd.h>
 
 // Creates and prepares a socket, then returns its file descriptor.
-int sock() {
+int sock()
+{
   int sockfd, optval;
   struct sockaddr_in srvaddr;
   struct Result r;
@@ -38,7 +38,8 @@ int sock() {
 }
 
 // Wait for a connection, fill cliaddr with the client address and return 1.
-int wait(int sockfd, struct sockaddr *cliaddr, int *clientfd) {
+int wait(int sockfd, struct sockaddr *cliaddr, int *clientfd)
+{
   struct sockaddr_in a; // placeholder for sizeof
   unsigned int clilen = sizeof(a);
   *clientfd = accept(sockfd, cliaddr, &clilen);
@@ -46,31 +47,35 @@ int wait(int sockfd, struct sockaddr *cliaddr, int *clientfd) {
   return 1;
 }
 
-struct Result ask(clientfd) {
+struct Result ask(int clientfd)
+{
   struct Result r;
   char mode[2]; // read or write
   char *folder = "CSV";
-  char prompt[BUFFER_SIZE], buffer[BUFFER_SIZE];
-  ssize_t n = read(clientfd, buffer, BUFFER_SIZE);
+  r = getdata(clientfd);
   assert;
-  buffer[n] = '\0'; // remove last dumb char that causes problems
-  sprintf(prompt, "%s", strtok(buffer, ""));
-  // n = strlen(prompt);
+  char prompt[strlen(r.string)];
+  strcpy(prompt, r.string);
   check_filename(prompt);
   assert;
-  return action(prompt);
+  return getfile(prompt, clientfd);
 }
 
-void respond(clientfd) {
+void respond(clientfd)
+{
   struct Result r = ask(clientfd);
   char buffer[BUFFER_SIZE];
-  char response[strlen(r.string) + 5];
-  sprintf(response, "%d\n%s", r.code, r.string);
-  int i, j;
-  for (i = 0; i < strlen(response) - BUFFER_SIZE; i += BUFFER_SIZE) {
-    j = BUFFER_SIZE;
-    while (--j)
-      buffer[j] = response[i + j];
-    send(clientfd, buffer, BUFFER_SIZE, 0);
+  char response[BUFFER_SIZE];
+  sprintf(response, "%d", r.code);
+  send(clientfd, response, BUFFER_SIZE, 0);
+  strcpy(response, "");
+  if (r.code != 0)
+  {
+    sprintf(response, r.string);
+    send(clientfd, response, BUFFER_SIZE, 0);
+    return;
   }
+  // Read the file and send its contents to the client
+  while (fgets(buffer, BUFFER_SIZE, r.file) != NULL)
+    send(clientfd, buffer, strlen(buffer), 0);
 }
