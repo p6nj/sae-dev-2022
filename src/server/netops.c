@@ -10,15 +10,8 @@
 
 // Creates and prepares a socket, then returns its file descriptor.
 int sock() {
-  int sockfd, client_fd, n, optval;
-  unsigned int clilen;
-  struct sockaddr_in serv_addr;
-  struct sockaddr cli_addr;
-  FILE *file;
-  char buffer[BUFFER_SIZE], filename[BUFFER_SIZE];
-  char mode[2];          // access mode (read or write) for the destination file
-  char folder[] = "CSV"; // name of the folder to save or read file
-  char name[BUFFER_SIZE];
+  int sockfd, optval;
+  struct sockaddr_in srvaddr;
   struct Result r;
 
   // Create the server socket
@@ -29,10 +22,10 @@ int sock() {
   setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
 
   // Bind the socket to a local address
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_addr.s_addr = INADDR_ANY;
-  serv_addr.sin_port = htons(PORT);
-  bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+  srvaddr.sin_family = AF_INET;
+  srvaddr.sin_addr.s_addr = INADDR_ANY;
+  srvaddr.sin_port = htons(PORT);
+  bind(sockfd, (struct sockaddr *)&srvaddr, sizeof(srvaddr));
   assertquit;
 
   // Listen for n incoming connections
@@ -40,9 +33,6 @@ int sock() {
   assertquit;
 
   println("Server listening on port %d...\x1B[32m", PORT);
-
-  // Wait for an incoming connection
-  clilen = sizeof(serv_addr);
 
   return sockfd;
 }
@@ -60,19 +50,15 @@ struct Result ask(clientfd) {
   struct Result r;
   char mode[2]; // read or write
   char *folder = "CSV";
-  char name[BUFFER_SIZE], buffer[BUFFER_SIZE];
+  char prompt[BUFFER_SIZE], buffer[BUFFER_SIZE];
   ssize_t n = read(clientfd, buffer, BUFFER_SIZE);
   assert;
   buffer[n] = '\0'; // remove last dumb char that causes problems
-  sprintf(name, "%s", strtok(buffer, ""));
-  n = strlen(name);
-  check_filename(name);
+  sprintf(prompt, "%s", strtok(buffer, ""));
+  // n = strlen(prompt);
+  check_filename(prompt);
   assert;
-
-  // ADD FILE OPERATION HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  r.code = 0;
-  strcpy(r.string, name);
-  return r;
+  return action(prompt);
 }
 
 void respond(clientfd) {

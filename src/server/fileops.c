@@ -28,3 +28,10 @@ void check_filename(char filename[]) {
   }
   NO;
 }
+
+struct Result action(char prompt[]) {
+  struct Result r;
+  char folder[] = prompt[strlen(prompt) - 1] == 'w' ? "CSV" : "OUT";
+  prompt[strlen(prompt) - 1] = '\0';
+  return r;
+}
