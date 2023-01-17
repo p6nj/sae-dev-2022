@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
   int sockfd, n;
   struct sockaddr_in servaddr;
   char buf[BUFFER_SIZE];
+  bool writemode = false;
 
   // Vérification des arguments de la ligne de commande
   if (argc != 2)
@@ -18,6 +19,8 @@ int main(int argc, char *argv[])
     printf("Usage: %s <file_name>\n", argv[0]);
     exit(1);
   }
+
+  if argv[1]
 
   // Création de la socket
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -33,7 +36,6 @@ int main(int argc, char *argv[])
 
   // Envoi du nom du fichier demandé au serveur
   write(sockfd, argv[1], strlen(argv[1]));
-
   // Réception et affichage du contenu du fichier
   while ((n = read(sockfd, buf, BUFFER_SIZE)) > 0)
   {
@@ -41,11 +43,9 @@ int main(int argc, char *argv[])
     printf("%s", buf);
   }
   if (n < 0)
-    exit(EXIT_FAILURE);
-
+    exit(2);
   // Fermeture de la connexion
   close(sockfd);
-
   printf("\n");
 
   return 0;
