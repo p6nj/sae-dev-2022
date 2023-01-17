@@ -4,7 +4,6 @@
 #define WRITEFILE                 "WF %s %s", filename, inet_ntoa(((struct sockaddr_in*) &ip)->sin_addr)
 #define SERVERSTARTED             "SS %d", PORT
 #define fmt(f) sprintf(format, f);break
-#include "errors.c"
 #include "preferences.c"
 #include <arpa/inet.h>
 #include <errno.h>
@@ -16,7 +15,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <time.h>
-#include <stdarg.h>
 
 
 extern int errno;

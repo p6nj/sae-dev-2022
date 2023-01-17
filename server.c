@@ -11,8 +11,6 @@
 #include <strings.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <time.h>
-#include <stdarg.h>
 #include "log.c"
 #define SUCCESS true
 #define EPIC_SUCCESS SUCCESS
@@ -23,13 +21,7 @@
     close(sckfd);            \
     return throw(desc, code); \
   }
-#define FORMAT "\x1B[31m/!\\ Error %s. /!\\\nCODE %u\n"
-
-int throw(char* desc, unsigned int code){
-  if (VERBOSE)
-    fprintf(stderr, FORMAT, desc, code);
-  return (code);
-}
+#include "errors.c"
 
 /* Checks if a filename is right for the project format.
  * This will prevent clients from writting somewhere else than the provided
@@ -37,7 +29,7 @@ int throw(char* desc, unsigned int code){
  * On Windows you also have to check for '\'.
  * The filename is considered right only if it's just a name (no extension).
  */
-  bool filename_ok(char filename[]) {
+bool filename_ok(char filename[]) {
   switch (filename[0]) {
     case '.':
       return false;
