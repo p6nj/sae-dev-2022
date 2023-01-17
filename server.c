@@ -1,3 +1,6 @@
+// Structure of every connection: one request, one response.
+// File name for edited CSV documents: [original file name]-[year]-[month]-[day]-[hour]-[duration]
+
 #include "errors.c"
 #include "preferences.c"
 #include <arpa/inet.h>
@@ -8,11 +11,42 @@
 #include <strings.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#define NTHROW(desc, code)                                                     \
-  {                                                                            \
-    close(sockfd);                                                             \
-    return throw(desc, code);                                                  \
+#include <errno.h>
+#define SUCCESS true
+#define EPIC_SUCCESS SUCCESS
+#define FAILURE false
+#define EPIC_FAIL FAILURE
+#define NTHROW(desc, code)    \
+  {                           \
+    close(sockfd);            \
+    return throw(desc, code); \
   }
+
+extern int errno;
+
+// enum to use with the event struct for logging purposes
+enum events
+{
+  ClientConnected,
+  ReadFile,
+  WriteFile,
+  ClientDisconnected,
+  ServerStarted
+};
+
+// struct of events to log with useful information
+struct event
+{
+  // from `events` enum
+  unsigned int code;
+  // The event may have failed (FAILURE) or succeeded (SUCCESS); for unexpected status, please use EPIC_SUCCESS or EPIC_FAIL instead.
+  // If status = false, `errno` will be used for error description on top of `message`.
+  bool status;
+  // IPv4 of the client responsible of the event if applicable
+  struct sockaddr ip;
+  // the name of the file being read or written if applicable
+  char filename[BUFFER_SIZE];
+};
 
 /* Checks if a filename is right for the project format.
  * This will prevent clients from writting somewhere else than the provided
@@ -20,8 +54,10 @@
  * On Windows you also have to check for '\'.
  * The filename is considered right only if it's just a name (no extension).
  */
-bool filename_ok(char filename[]) {
-  switch (filename[0]) {
+bool filename_ok(char filename[])
+{
+  switch (filename[0])
+  {
   case '.':
     return false;
   case '/':
@@ -33,7 +69,8 @@ bool filename_ok(char filename[]) {
   if (strchr(filename, '/') != NULL)
     return false;
   // the access mode must be present at the end and can either be read or write
-  switch (filename[strlen(filename) - 1]) {
+  switch (filename[strlen(filename) - 1])
+  {
   case 'w':
     return true;
   case 'r':
@@ -42,7 +79,8 @@ bool filename_ok(char filename[]) {
   return false;
 }
 
-int main() {
+int main()
+{
   int sockfd, client_fd, n, optval;
   unsigned int clilen;
   struct sockaddr_in serv_addr;
@@ -77,7 +115,8 @@ int main() {
   // Wait for an incoming connection
   clilen = sizeof(serv_addr);
   mode[1] = '\0';
-  while (1) {
+  while (1)
+  {
     client_fd = accept(sockfd, &cli_addr, &clilen);
     if (client_fd < 0)
       NTHROW("accepting connection", 4);
@@ -92,13 +131,15 @@ int main() {
     buffer[n] = '\0'; // remove last dumb char that causes problems
     sprintf(name, "%s", strtok(buffer, ""));
     n = strlen(name);
-    if (!filename_ok(name)) {
+    if (!filename_ok(name))
+    {
       char temp[strlen(name) + 40];
       sprintf(temp, "parsing file name (illegal filename)");
       NTHROW(temp, 403);
     }
     mode[0] = name[n - 1];
-    if (mode[0] == 'w') {
+    if (mode[0] == 'w')
+    {
       folder[0] = 'O';
     }
     name[n - 1] = '\0';
