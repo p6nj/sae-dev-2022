@@ -15,7 +15,7 @@
     close(sckfd);             \
     return throw(desc, code); \
   }
-#define THROW(desc, code) logfailure;return throw(desc, code);
+#define THROW(desc, code) {logfailure;return throw(desc, code);}
 
   /* Checks if a filename is right for the project format.
    * This will prevent clients from writting somewhere else than the provided
@@ -73,13 +73,11 @@ int main() {
 
   event = ServerStarted;
   // Create the server socket
-  if ((sckfd = suckfd()) < 0) {
-    logfailure;
-    THROW("creating socket", 1);
-  }
+  if ((sckfd = suckfd()) < 0) THROW("creating socket", 1);
 
   // Bind the socket to a local address
-  if (!cast(sckfd, srvaddr))NTHROW("binding socket", 2);
+  // !!!!!!!!!! IF YOU GET AN ERROR HERE CHECK YOUR PORT NUMBER !!!!!!!!!!!!!!
+  if (!cast(sckfd, srvaddr)) NTHROW("binding socket", 2);
 
   // Listen for n incoming connections
   if (listen(sckfd, 1) < 0) NTHROW("listening for connections", 3);

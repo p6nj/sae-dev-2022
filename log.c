@@ -4,7 +4,7 @@
 #define READFILE                  "RF %s %s", IP, filename
 #define WRITEFILE                 "WF %s %s", IP, filename
 #define SERVERSTARTED             "SS %u", PORT
-#define fmt(f) sprintf(format, f);break
+#define fmt(f) {sprintf(format, f);break;}
 #include "common.c"
 
 

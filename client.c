@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
 
   // Connexion au serveur
   if (connect(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0)
-    throw("connecting to server", 404);
+    return throw("connecting to server", 404);
 
   // Envoi du nom du fichier demandé au serveur
   write(sockfd, argv[1], strlen(argv[1]));
@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     printf("%s", buf);
   }
   if (n < 0)
-    throw("reading server response", 100);
+    return throw("reading server response", 100);
 
   // Fermeture de la connexion
   close(sockfd);
