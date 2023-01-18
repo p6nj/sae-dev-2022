@@ -99,3 +99,14 @@ int main() {
 
   return 0;
 }
+
+// snippet to read a large file (tested in client.c):
+// // Réception et affichage du contenu du fichier
+// char response[BUFFER_SIZE * 10];
+// while ((n = read(sockfd, buf, BUFFER_SIZE)) > 0) {
+//   buf[n] = '\0';
+//   sprintf(response + strlen(response), "%s", buf);
+// }
+// if (n < 0)
+//   return throw("reading server response", 100);
+// printf("%s", response);
