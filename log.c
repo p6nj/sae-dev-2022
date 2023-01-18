@@ -1,20 +1,11 @@
-#define CLIENTCONNECTED           "CC %s", inet_ntoa(((struct sockaddr_in*) &ip)->sin_addr)
-#define CLIENTDISCONNECTED        "CD %s", inet_ntoa(((struct sockaddr_in*) &ip)->sin_addr)
-#define READFILE                  "RF %s %s", filename, inet_ntoa(((struct sockaddr_in*) &ip)->sin_addr)
-#define WRITEFILE                 "WF %s %s", filename, inet_ntoa(((struct sockaddr_in*) &ip)->sin_addr)
-#define SERVERSTARTED             "SS %d", PORT
+#define IP inet_ntoa(((struct sockaddr_in*) &ip)->sin_addr)
+#define CLIENTCONNECTED           "CC %s", IP
+#define CLIENTDISCONNECTED        "CD %s", IP
+#define READFILE                  "RF %s %s", IP, filename
+#define WRITEFILE                 "WF %s %s", IP, filename
+#define SERVERSTARTED             "SS %u", PORT
 #define fmt(f) sprintf(format, f);break
-#include "preferences.c"
-#include <arpa/inet.h>
-#include <errno.h>
-#include <netinet/in.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
-#include <strings.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <time.h>
+#include "common.c"
 
 
 extern int errno;
@@ -37,7 +28,8 @@ void logg(
     // IPv4 of the client responsible of the event if applicable
     struct sockaddr ip,
     // the name of the file being read or written if applicable
-    char filename[BUFFER_SIZE]
+    char filename[BUFFER_SIZE],
+    unsigned int line
 ) {
     char format[BUFFER_SIZE];
     // I didn't find anything more optimised than this piece of junk, behold:
@@ -49,6 +41,6 @@ void logg(
         case ServerStarted:fmt(SERVERSTARTED);
     }
     FILE* f = fopen("log.txt", "a+");
-    fprintf(f, "%lu %s %s\n", (unsigned long) time(NULL), status ? "✅" : "❎", format);
+    fprintf(f, "%lu %04u %c %s\n", (unsigned long) time(NULL), line, status ? '-' : 'X', format);
     fclose(f);
 }

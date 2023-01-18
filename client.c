@@ -1,14 +1,6 @@
-#include "errors.c"
-#include "preferences.c"
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include "common.c"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   int sockfd, n;
   struct sockaddr_in servaddr;
   char buf[BUFFER_SIZE];
@@ -28,8 +20,8 @@ int main(int argc, char *argv[]) {
   servaddr.sin_port = htons(PORT);
 
   // Connexion au serveur
-  if (connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
-    THROW("connecting to server", 404);
+  if (connect(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0)
+    throw("connecting to server", 404);
 
   // Envoi du nom du fichier demandé au serveur
   write(sockfd, argv[1], strlen(argv[1]));
@@ -40,7 +32,7 @@ int main(int argc, char *argv[]) {
     printf("%s", buf);
   }
   if (n < 0)
-    THROW("reading server response", 100);
+    throw("reading server response", 100);
 
   // Fermeture de la connexion
   close(sockfd);

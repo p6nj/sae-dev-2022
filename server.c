@@ -1,119 +1,122 @@
 // Structure of every connection: one request, one response.
 // File name for edited CSV documents: [original file name]-[year]-[month]-[day]-[hour]-[duration]
 
-#include "preferences.c"
-#include <arpa/inet.h>
-#include <errno.h>
-#include <netinet/in.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
-#include <strings.h>
-#include <sys/socket.h>
-#include <unistd.h>
 #include "log.c"
+
 #define SUCCESS true
 #define EPIC_SUCCESS SUCCESS
 #define FAILURE false
 #define EPIC_FAIL FAILURE
+#define logsuccess logg(event, true, cliaddr, filename, __LINE__)
+#define logfailure logg(event, false, cliaddr, filename, __LINE__)
 #define NTHROW(desc, code)    \
   {                           \
-    close(sckfd);            \
+    logfailure;               \
+    close(sckfd);             \
     return throw(desc, code); \
   }
-#include "errors.c"
+#define THROW(desc, code) logfailure;return throw(desc, code);
 
-/* Checks if a filename is right for the project format.
- * This will prevent clients from writting somewhere else than the provided
- * folder using either '..' or '/'.
- * On Windows you also have to check for '\'.
- * The filename is considered right only if it's just a name (no extension).
- */
+  /* Checks if a filename is right for the project format.
+   * This will prevent clients from writting somewhere else than the provided
+   * folder using either '..' or '/'.
+   * On Windows you also have to check for '\'.
+   * The filename is considered right only if it's just a name (no extension).
+   */
 bool filename_ok(char filename[]) {
   switch (filename[0]) {
     case '.':
-      return false;
+      return FAILURE;
     case '/':
-      return false;
+      return FAILURE;
     default:;
   }
   if (strchr(filename, '.') != NULL)
-    return false;
+    return FAILURE;
   if (strchr(filename, '/') != NULL)
-    return false;
+    return FAILURE;
   // the access mode must be present at the end and can either be read or write
   switch (filename[strlen(filename) - 1]) {
     case 'w':
-      return true;
+      return SUCCESS;
     case 'r':
-      return true;
+      return SUCCESS;
   }
-  return false;
+  return EPIC_FAIL;
+}
+
+int suckfd() {
+  int sckfd = socket(PF_INET, SOCK_STREAM, 0);
+  if (sckfd < 0) return sckfd;
+  int optval = 1;
+  setsockopt(sckfd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+  return sckfd;
+}
+
+int cast(int sckfd, struct sockaddr_in srvaddr) {
+  srvaddr.sin_family = AF_INET;
+  srvaddr.sin_addr.s_addr = INADDR_ANY;
+  srvaddr.sin_port = htons(PORT);
+  if (bind(sckfd, (struct sockaddr*) &srvaddr, sizeof(srvaddr)) < 0)return FAILURE;
+  return SUCCESS;
 }
 
 int main() {
-  int sckfd, clifd, n, optval;
-  unsigned int iplen;
+  int sckfd, clifd, n;
+  unsigned int iplen, event;
   struct sockaddr_in srvaddr;
   struct sockaddr cliaddr;
   FILE* file;
   char buffer[BUFFER_SIZE], filename[BUFFER_SIZE];
   char mode[2];          // access mode (read or write) for the destination file
   char folder[] = "CSV"; // name of the folder to save or read file
-  char name[BUFFER_SIZE];
 
+  event = ServerStarted;
   // Create the server socket
-  sckfd = socket(PF_INET, SOCK_STREAM, 0);
-  if (sckfd < 0)
+  if ((sckfd = suckfd()) < 0) {
+    logfailure;
     THROW("creating socket", 1);
-
-  optval = 1;
-  setsockopt(sckfd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+  }
 
   // Bind the socket to a local address
-  srvaddr.sin_family = AF_INET;
-  srvaddr.sin_addr.s_addr = INADDR_ANY;
-  srvaddr.sin_port = htons(PORT);
-  if (bind(sckfd, (struct sockaddr*) &srvaddr, sizeof(srvaddr)) < 0)
-    NTHROW("binding socket", 2);
+  if (!cast(sckfd, srvaddr))NTHROW("binding socket", 2);
 
   // Listen for n incoming connections
-  if (listen(sckfd, 1) < 0)
-    NTHROW("listening for connections", 3);
-
+  if (listen(sckfd, 1) < 0) NTHROW("listening for connections", 3);
   printf("Server listening on port %d...\n\x1B[32m", PORT);
+  logsuccess;
 
   // Wait for an incoming connection
   iplen = sizeof(srvaddr);
   mode[1] = '\0';
   while (1) {
     clifd = accept(sckfd, &cliaddr, &iplen);
-    if (clifd < 0)
-      NTHROW("accepting connection", 4);
-
-    logg(ClientConnected, true, cliaddr, filename);
+    event = ClientConnected;
+    if (clifd < 0) NTHROW("accepting connection", 4);
+    logsuccess;
 
     // Read the filename from the client
     n = read(clifd, buffer, BUFFER_SIZE);
-    if (n < 0)
-      NTHROW("reading filename from the client", 8);
+    event = ReadFile;
+    if (n < 0) NTHROW("reading filename from the client", 8);
     buffer[n] = '\0'; // remove last dumb char that causes problems
-    sprintf(name, "%s", strtok(buffer, ""));
-    n = strlen(name);
-    if (!filename_ok(name)) {
-      char temp[strlen(name) + 40];
+    sprintf(filename, "%s", strtok(buffer, ""));
+    n = strlen(filename);
+    if (!filename_ok(filename)) {
+      char temp[strlen(filename) + 40];
       sprintf(temp, "parsing file name (illegal filename)");
       NTHROW(temp, 403);
     }
-    mode[0] = name[n - 1];
+    mode[0] = filename[n - 1];
     if (mode[0] == 'w') {
       folder[0] = 'O';
     }
-    name[n - 1] = '\0';
-    sprintf(filename, "%s/%s.csv", folder, name);
+    filename[n - 1] = '\0';
+    char Filename[BUFFER_SIZE];
+    sprintf(Filename, "%s/%s.csv", folder, filename);
 
     // Open the CSV file
-    file = fopen(filename, mode);
+    file = fopen(Filename, mode);
     if (file == NULL)
       NTHROW("opening file", 5);
 
