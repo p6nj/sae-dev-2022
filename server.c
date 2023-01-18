@@ -1,10 +1,10 @@
 // Structure of every connection: one request, one response.
 // File name for edited CSV documents: [original file name]-[year]-[month]-[day]-[hour]-[duration]
 
-#include "log.c"
-#include "fileshit.c"
-#include "netshit.c"
-#include "resparse.c"
+#include "src/log.c"
+#include "src/fileshit.c"
+#include "src/netshit.c"
+#include "src/resparse.c"
 
 #define SUCCESS true
 #define EPIC_SUCCESS SUCCESS
@@ -31,19 +31,22 @@ int main() {
   char mode[2];          // access mode (read or write) for the destination file
   char folder[] = "CSV"; // name of the folder to save or read file
   unsigned int counter = 0;
-  char response[TOTALMAX];
+  char response[TOTALMAX + 1];// one will be used to see if the response is too large
   struct request r;
 
   event = ServerStarted;
   // Create the server socket
-  if ((sckfd = suckfd()) < 0) THROW("creating socket", 1);
+  if ((sckfd = suckfd()) < 0)
+    THROW("creating socket", 1);
 
   // Bind the socket to a local address
   // !!!!!!!!!! IF YOU GET AN ERROR HERE CHECK YOUR PORT NUMBER !!!!!!!!!!!!!!
-  if (!cast(sckfd, srvaddr)) NTHROW("binding socket", 2);
+  if (!cast(sckfd, srvaddr))
+    NTHROW("binding socket", 2);
 
   // Listen for n incoming connections
-  if (listen(sckfd, 1) < 0) NTHROW("listening for connections", 3);
+  if (listen(sckfd, 1) < 0)
+    NTHROW("listening for connections", 3);
   printf("Server listening on port %d...\n\x1B[32m", PORT);
   logsuccess;
 
@@ -53,7 +56,8 @@ int main() {
   while (1) {
     clifd = accept(sckfd, &cliaddr, &iplen);
     event = ClientConnected;
-    if (clifd < 0) NTHROW("accepting connection", 4);
+    if (clifd < 0)
+      NTHROW("accepting connection", 4);
     logsuccess;
 
     // Read the filename from the client

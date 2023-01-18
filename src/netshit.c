@@ -13,6 +13,7 @@ int cast(int sckfd, struct sockaddr_in srvaddr) {
     srvaddr.sin_family = AF_INET;
     srvaddr.sin_addr.s_addr = INADDR_ANY;
     srvaddr.sin_port = htons(PORT);
-    if (bind(sckfd, (struct sockaddr*) &srvaddr, sizeof(srvaddr)) < 0)return false;
+    if (bind(sckfd, (struct sockaddr*) &srvaddr, sizeof(srvaddr)) < 0)
+        return false;
     return true;
 }

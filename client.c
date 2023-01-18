@@ -1,4 +1,4 @@
-#include "common.c"
+#include "src/common.c"
 #include <netinet/in.h>
 
 int main(int argc, char* argv[]) {
