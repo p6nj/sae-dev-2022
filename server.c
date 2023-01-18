@@ -4,6 +4,7 @@
 #include "log.c"
 #include "fileshit.c"
 #include "netshit.c"
+#include "resparse.c"
 
 #define SUCCESS true
 #define EPIC_SUCCESS SUCCESS
@@ -26,8 +27,12 @@ int main() {
   struct sockaddr cliaddr;
   FILE* file;
   char buffer[BUFFER_SIZE], filename[BUFFER_SIZE];
+  char Filename[BUFFER_SIZE];
   char mode[2];          // access mode (read or write) for the destination file
   char folder[] = "CSV"; // name of the folder to save or read file
+  unsigned int counter = 0;
+  char response[TOTALMAX];
+  struct request r;
 
   event = ServerStarted;
   // Create the server socket
@@ -52,23 +57,32 @@ int main() {
     logsuccess;
 
     // Read the filename from the client
-    n = read(clifd, buffer, BUFFER_SIZE);
     event = ReadFile;
-    if (n < 0) NTHROW("reading filename from the client", 8);
-    buffer[n] = '\0'; // remove last dumb char that causes problems
-    sprintf(filename, "%s", strtok(buffer, ""));
-    n = strlen(filename);
+    while ((n = read(clifd, buffer, BUFFER_SIZE)) > 0) {
+      buffer[n] = '\0';
+      sprintf(response + strlen(response), "%s", buffer);
+    }
+    NTHROW("reading filename from the client", 8);
+
+    // parse the resonse after verifying it
+    if (!response_ok(response)) {
+      char temp[strlen(response) + 40];
+      sprintf(temp, "parsing response (illegal response)\nresponse = %s", response);
+      NTHROW(temp, 402);
+    }
+    r = parse(response);
+    strcpy(filename, r.filename);
+    mode[0] = r.mode;
+
     if (!filename_ok(filename)) {
       char temp[strlen(filename) + 40];
-      sprintf(temp, "parsing file name (illegal filename)");
+      sprintf(temp, "parsing file name (illegal filename)\nfilename = %s", filename);
       NTHROW(temp, 403);
     }
-    mode[0] = filename[n - 1];
     if (mode[0] == 'w') {
       folder[0] = 'O';
     }
     filename[n - 1] = '\0';
-    char Filename[BUFFER_SIZE];
     sprintf(Filename, "%s/%s.csv", folder, filename);
 
     // Open the CSV file
