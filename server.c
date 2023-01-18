@@ -2,6 +2,8 @@
 // File name for edited CSV documents: [original file name]-[year]-[month]-[day]-[hour]-[duration]
 
 #include "log.c"
+#include "fileshit.c"
+#include "netshit.c"
 
 #define SUCCESS true
 #define EPIC_SUCCESS SUCCESS
@@ -16,50 +18,6 @@
     return throw(desc, code); \
   }
 #define THROW(desc, code) {logfailure;return throw(desc, code);}
-
-  /* Checks if a filename is right for the project format.
-   * This will prevent clients from writting somewhere else than the provided
-   * folder using either '..' or '/'.
-   * On Windows you also have to check for '\'.
-   * The filename is considered right only if it's just a name (no extension).
-   */
-bool filename_ok(char filename[]) {
-  switch (filename[0]) {
-    case '.':
-      return FAILURE;
-    case '/':
-      return FAILURE;
-    default:;
-  }
-  if (strchr(filename, '.') != NULL)
-    return FAILURE;
-  if (strchr(filename, '/') != NULL)
-    return FAILURE;
-  // the access mode must be present at the end and can either be read or write
-  switch (filename[strlen(filename) - 1]) {
-    case 'w':
-      return SUCCESS;
-    case 'r':
-      return SUCCESS;
-  }
-  return EPIC_FAIL;
-}
-
-int suckfd() {
-  int sckfd = socket(PF_INET, SOCK_STREAM, 0);
-  if (sckfd < 0) return sckfd;
-  int optval = 1;
-  setsockopt(sckfd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
-  return sckfd;
-}
-
-int cast(int sckfd, struct sockaddr_in srvaddr) {
-  srvaddr.sin_family = AF_INET;
-  srvaddr.sin_addr.s_addr = INADDR_ANY;
-  srvaddr.sin_port = htons(PORT);
-  if (bind(sckfd, (struct sockaddr*) &srvaddr, sizeof(srvaddr)) < 0)return FAILURE;
-  return SUCCESS;
-}
 
 int main() {
   int sckfd, clifd, n;

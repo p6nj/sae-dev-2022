@@ -11,11 +11,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <time.h>
-
-// preferences
-#define PORT 6666
-#define BUFFER_SIZE 1024
-#define VERBOSE true
+#include "varshit.c"
 
 // errors
 #define FORMAT "\x1B[31m/!\\ Error %s. /!\\\nCODE %u\n"
