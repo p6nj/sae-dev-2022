@@ -61,7 +61,11 @@ int main() {
   mode[1] = '\0';
   while (1) {
     bzero(response, TOTALMAX);
-    close(sckfd);
+    bzero(r.filedata, MAXFILESIZE);
+    bzero(r.filename, MAXREQUESTSIZE);
+    bzero(filename, MAXREQUESTSIZE);
+    bzero(Filename, MAXREQUESTSIZE + 8);
+    printf("\tresponse=%s\n\tfilename=%s\n\tFilename=%s\n", response, filename, Filename);
     event = ServerStarted;
     // Create the server socket
     if ((sckfd = suckfd()) < 0)
@@ -99,7 +103,7 @@ int main() {
     if (close(clifd) != 0)
       NTHROW("closing file descriptor", 7);
 
-    // Empty the buffer and close the connection
+    // Empty the buffer
     bzero(buffer, BUFFER_SIZE);
     if (n < 0)
       NTHROW("reading filename from the client", 8);
@@ -157,6 +161,9 @@ int main() {
 
     // Empty the buffer and close the connection
     bzero(buffer, BUFFER_SIZE);
+    if (fclose(file) != 0)
+      return throw("closing file stream", 6);
+    close(sckfd);
   }
 
   // Close the file and the client socket

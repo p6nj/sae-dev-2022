@@ -6,7 +6,7 @@
 
 struct request {
     char mode;
-    char filename[MAXREQUESTSIZE - 1];
+    char filename[MAXREQUESTSIZE];
     char filedata[MAXFILESIZE];
 };
 
