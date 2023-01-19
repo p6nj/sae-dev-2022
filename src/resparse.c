@@ -19,6 +19,7 @@ struct request parse(char response[TOTALMAX]) {
             if (response[i] == '|')break;
             sprintf(r.filename + strlen(r.filename), "%c", response[i]);
         }
+        i++;
         for (int j = i; j < strlen(response); j++)
             sprintf(r.filedata, "%c", response[j]);
     }
@@ -32,23 +33,25 @@ bool response_ok(char response[TOTALMAX]) {
     if (strlen(response) < 2)
         return false;
     // if the response is the right size, the last char should be empty.
+    // this is an additional check for the server that should already have a check (cause it has a sized string for the response)
     if (response[TOTALMAX] != '\0')
         return false;
     switch (response[0]) {
         case 'w':
             {
-                if (strchr(response, "|") == NULL)
+                if (strchr(response, '|') == NULL)
                     return false;
                 bool data = false;
                 int j = 0;
                 for (int i = 1; i < TOTALMAX; i++) {
                     if (data) {
-                        if (i >= MAXFILESIZE)
+                        if (response[i] == '\0')break;
+                        else if (j == MAXFILESIZE)
                             return false;
-                        j += 1;
+                        j++;
                     }
                     else if (response[i] == '|') {
-                        if (i >= MAXREQUESTSIZE)
+                        if (i == MAXREQUESTSIZE || i < 3)
                             return false;
                         data = true;
                     }
@@ -58,7 +61,7 @@ bool response_ok(char response[TOTALMAX]) {
                 return true;
             }
         case 'r':
-            return true;
+            return true; // there may be some other checks to do here, feels weird
         default:
             return false;
     }

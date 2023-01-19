@@ -1,16 +1,24 @@
 #include "src/common.c"
+#include "src/resparse.c"
 #include <netinet/in.h>
 
 int main(int argc, char* argv[]) {
   int sockfd, n;
   struct sockaddr_in servaddr;
   char buf[BUFFER_SIZE];
+  char req[TOTALMAX];
 
   // Vérification des arguments de la ligne de commande
   if (argc != 2) {
-    printf("Usage: %s <file_name>\n", argv[0]);
-    exit(1);
+    printf("Usage: %s <r/w><filename(max:%d)>[|<data(max:%d)>]\n", argv[0], MAXREQUESTSIZE - 1, MAXFILESIZE);
+    return EXIT_FAILURE;
   }
+  strcpy(req, argv[1]);
+  if (!response_ok(req)) {
+    printf("Usage: %s <r/w><filename(max:%d)>[|<data(max:%d)>]\n", argv[0], MAXREQUESTSIZE - 1, MAXFILESIZE);
+    return EXIT_FAILURE;
+  }
+
 
   // Création de la socket
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
