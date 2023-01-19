@@ -32,10 +32,6 @@ struct request parse(char response[TOTALMAX]) {
 bool response_ok(char response[TOTALMAX]) {
     if (strlen(response) < 2)
         return false;
-    // if the response is the right size, the last char should be empty.
-    // this is an additional check for the server that should already have a check (cause it has a sized string for the response)
-    if (response[TOTALMAX] != '\0')
-        return false;
     switch (response[0]) {
         case 'w':
             {

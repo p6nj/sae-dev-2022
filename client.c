@@ -13,6 +13,10 @@ int main(int argc, char* argv[]) {
     printf("Usage: %s <r/w><filename(max:%d)>[|<data(max:%d)>]\n", argv[0], MAXREQUESTSIZE - 1, MAXFILESIZE);
     return EXIT_FAILURE;
   }
+  if (strlen(argv[1]) > TOTALMAX - 1) { // too big for the req string!
+    printf("Usage: %s <r/w><filename(max:%d)>[|<data(max:%d)>]\n", argv[0], MAXREQUESTSIZE - 1, MAXFILESIZE);
+    return EXIT_FAILURE;
+  }
   strcpy(req, argv[1]);
   if (!response_ok(req)) {
     printf("Usage: %s <r/w><filename(max:%d)>[|<data(max:%d)>]\n", argv[0], MAXREQUESTSIZE - 1, MAXFILESIZE);
@@ -33,7 +37,7 @@ int main(int argc, char* argv[]) {
     return throw("connecting to server", 404);
 
   // Envoi du nom du fichier demandé au serveur
-  write(sockfd, argv[1], strlen(argv[1]));
+  write(sockfd, req, strlen(req));
 
   // Réception et affichage du contenu du fichier
   while ((n = read(sockfd, buf, BUFFER_SIZE)) > 0) {

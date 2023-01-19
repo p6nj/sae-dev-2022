@@ -20,19 +20,25 @@
   }
 #define THROW(desc, code) {logfailure;return throw(desc, code);}
 
+void printerrno() {
+  printf("errno=%d, strerr=%s\n", errno, strerror(errno));
+}
+
 int main() {
   int sckfd, clifd, n;
   unsigned int iplen, event;
   struct sockaddr_in srvaddr;
   struct sockaddr cliaddr;
   FILE* file;
-  char buffer[BUFFER_SIZE], filename[BUFFER_SIZE];
-  char Filename[BUFFER_SIZE];
+  char buffer[BUFFER_SIZE], filename[MAXREQUESTSIZE];
+  char Filename[MAXREQUESTSIZE + 8];
   char mode[2];          // access mode (read or write) for the destination file
   char folder[] = "CSV"; // name of the folder to save or read file
   unsigned int counter = 0;
   char response[TOTALMAX + 1];// one will be used to see if the response is too large
   struct request r;
+
+  atexit(printerrno);
 
   event = ServerStarted;
   // Create the server socket
@@ -62,16 +68,19 @@ int main() {
 
     // Read the filename from the client
     event = ReadFile;
-    while ((n = read(clifd, buffer, BUFFER_SIZE)) > 0) {
+    while ((n = read(clifd, buffer, BUFFER_SIZE)) > 0 && strlen(response) + BUFFER_SIZE < TOTALMAX - 1) {
       buffer[n] = '\0';
       sprintf(response + strlen(response), "%s", buffer);
+      printf("buffer = %s\nresponse = %s\n", buffer, response);
     }
-    NTHROW("reading filename from the client", 8);
+    printf("errno = %d\nerrdesc = %s\n", errno, strerror(errno));
+    if (n < 0)
+      NTHROW("reading filename from the client", 8);
 
     // parse the resonse after verifying it
     if (!response_ok(response)) {
       char temp[strlen(response) + 40];
-      sprintf(temp, "parsing response (illegal response)\nresponse = %s", response);
+      sprintf(temp, "parsing response (illegal response)\nresponse = %s\nstrlen(response) = %lu", response, strlen(response));
       NTHROW(temp, 402);
     }
     r = parse(response);
@@ -86,13 +95,14 @@ int main() {
     if (mode[0] == 'w') {
       folder[0] = 'O';
     }
-    filename[n - 1] = '\0';
     sprintf(Filename, "%s/%s.csv", folder, filename);
 
     // Open the CSV file
     file = fopen(Filename, mode);
     if (file == NULL)
       NTHROW("opening file", 5);
+
+    if (mode[0] == 'w')fprintf(file, "%s\n", r.filedata);
 
     // Read the file and send its contents to the client
     while (fgets(buffer, BUFFER_SIZE, file) != NULL)
