@@ -25,9 +25,9 @@ void printerrno() {
 }
 
 int main() {
-  int sckfd, clifd, n;
+  int sckfd, clifd, n, ncount;
   unsigned int iplen, event;
-  struct sockaddr_in srvaddr;
+  struct sockaddr_in srvaddr, cliresaddr;
   struct sockaddr cliaddr;
   FILE* file;
   char buffer[BUFFER_SIZE], filename[MAXREQUESTSIZE];
@@ -35,7 +35,7 @@ int main() {
   char mode[2];          // access mode (read or write) for the destination file
   char folder[] = "CSV"; // name of the folder to save or read file
   unsigned int counter = 0;
-  char response[TOTALMAX + 1];// one will be used to see if the response is too large
+  char response[TOTALMAX];// one will be used to see if the response is too large
   struct request r;
 
   atexit(printerrno);
@@ -47,7 +47,7 @@ int main() {
 
   // Bind the socket to a local address
   // !!!!!!!!!! IF YOU GET AN ERROR HERE CHECK YOUR PORT NUMBER !!!!!!!!!!!!!!
-  if (!cast(sckfd, srvaddr))
+  if (!cast(sckfd, srvaddr, PORT))
     NTHROW("binding socket", 2);
 
   // Listen for n incoming connections
@@ -60,7 +60,26 @@ int main() {
   iplen = sizeof(srvaddr);
   mode[1] = '\0';
   while (1) {
+    bzero(response, TOTALMAX);
+    close(sckfd);
+    event = ServerStarted;
+    // Create the server socket
+    if ((sckfd = suckfd()) < 0)
+      THROW("creating socket", 1);
+
+    // Bind the socket to a local address
+    // !!!!!!!!!! IF YOU GET AN ERROR HERE CHECK YOUR PORT NUMBER !!!!!!!!!!!!!!
+    if (!cast(sckfd, srvaddr, PORT))
+      NTHROW("binding socket", 2);
+
+    // Listen for n incoming connections
+    if (listen(sckfd, 1) < 0)
+      NTHROW("listening for connections", 3);
+
     clifd = accept(sckfd, &cliaddr, &iplen);
+    cliresaddr.sin_family = AF_INET;
+    cliresaddr.sin_addr.s_addr = inet_addr(inet_ntoa(((struct sockaddr_in*) &cliaddr)->sin_addr));
+    cliresaddr.sin_port = htons(RESPORT);
     event = ClientConnected;
     if (clifd < 0)
       NTHROW("accepting connection", 4);
@@ -68,12 +87,20 @@ int main() {
 
     // Read the filename from the client
     event = ReadFile;
-    while ((n = read(clifd, buffer, BUFFER_SIZE)) > 0 && strlen(response) + BUFFER_SIZE < TOTALMAX - 1) {
+    ncount = 0;
+    while ((n = read(clifd, buffer, BUFFER_SIZE)) > 0) {
+      if ((ncount + n) > TOTALMAX)
+        NTHROW("receiving request: request size exceeded TOTALMAX", 666);
       buffer[n] = '\0';
-      sprintf(response + strlen(response), "%s", buffer);
+      sprintf(response + strlen(response), "%s", strtok(buffer, " "));
       printf("buffer = %s\nresponse = %s\n", buffer, response);
+      ncount += n;
     }
-    printf("errno = %d\nerrdesc = %s\n", errno, strerror(errno));
+    if (close(clifd) != 0)
+      NTHROW("closing file descriptor", 7);
+
+    // Empty the buffer and close the connection
+    bzero(buffer, BUFFER_SIZE);
     if (n < 0)
       NTHROW("reading filename from the client", 8);
 
@@ -94,6 +121,7 @@ int main() {
     }
     if (mode[0] == 'w') {
       folder[0] = 'O';
+      event = WriteFile;
     }
     sprintf(Filename, "%s/%s.csv", folder, filename);
 
@@ -102,18 +130,33 @@ int main() {
     if (file == NULL)
       NTHROW("opening file", 5);
 
-    if (mode[0] == 'w')fprintf(file, "%s\n", r.filedata);
+    if (mode[0] == 'w') {
+      fprintf(file, "%s\n", r.filedata);
+      fclose(file);
+      logsuccess;
+      event = ReadFile;
+      file = fopen(Filename, "r");
+      if (file == NULL)
+        NTHROW("opening file again", 50);
+    }
+
+    // reconnect to the client
+    close(sckfd);
+    // Create the server socket
+    if ((sckfd = suckfd()) < 0)
+      THROW("creating socket", 1);
+    if (connect(sckfd, (struct sockaddr*) &cliresaddr, sizeof(cliresaddr)) < 0)
+      return throw("connecting back to client", 404);
 
     // Read the file and send its contents to the client
     while (fgets(buffer, BUFFER_SIZE, file) != NULL)
-      send(clifd, buffer, strlen(buffer), 0);
+      send(sckfd, buffer, strlen(buffer), 0);
 
     printf("%s sent!\n", filename);
+    logsuccess;
 
     // Empty the buffer and close the connection
     bzero(buffer, BUFFER_SIZE);
-    if (close(clifd) != 0)
-      NTHROW("closing file descriptor", 7);
   }
 
   // Close the file and the client socket

@@ -13,18 +13,10 @@ bool filename_ok(char filename[]) {
             return false;
         case '/':
             return false;
-        default:;
     }
     if (strchr(filename, '.') != NULL)
         return false;
     if (strchr(filename, '/') != NULL)
         return false;
-    // the access mode must be present at the end and can either be read or write
-    switch (filename[strlen(filename) - 1]) {
-        case 'w':
-            return true;
-        case 'r':
-            return true;
-    }
-    return false;
+    return true;
 }

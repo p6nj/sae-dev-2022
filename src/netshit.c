@@ -9,10 +9,10 @@ int suckfd() {
     return sckfd;
 }
 
-int cast(int sckfd, struct sockaddr_in srvaddr) {
+int cast(int sckfd, struct sockaddr_in srvaddr, int port) {
     srvaddr.sin_family = AF_INET;
     srvaddr.sin_addr.s_addr = INADDR_ANY;
-    srvaddr.sin_port = htons(PORT);
+    srvaddr.sin_port = htons(port);
     if (bind(sckfd, (struct sockaddr*) &srvaddr, sizeof(srvaddr)) < 0)
         return false;
     return true;

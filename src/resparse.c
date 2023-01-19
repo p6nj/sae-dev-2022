@@ -14,19 +14,20 @@ struct request parse(char response[TOTALMAX]) {
     struct request r;
     r.mode = response[0];
     int i;
-    if (r.mode == 'r') {
+    if (r.mode == 'w') {
         for (i = 1; i < MAXREQUESTSIZE; i++) {
             if (response[i] == '|')break;
             sprintf(r.filename + strlen(r.filename), "%c", response[i]);
         }
         i++;
         for (int j = i; j < strlen(response); j++)
-            sprintf(r.filedata, "%c", response[j]);
+            sprintf(r.filedata + strlen(r.filedata), "%c", response[j]);
     }
     else {
         for (i = 1; i < strlen(response); i++)
-            sprintf(r.filename, "%c", response[i]);
+            sprintf(r.filename + strlen(r.filename), "%c", response[i]);
     }
+    return r;
 }
 
 bool response_ok(char response[TOTALMAX]) {

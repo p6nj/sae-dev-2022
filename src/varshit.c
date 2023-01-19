@@ -1,5 +1,6 @@
 // preferences
 #define PORT 6666
+#define RESPORT 9999
 #define BUFFER_SIZE 1024
 #define VERBOSE true
 #define MAXFILESIZE BUFFER_SIZE*10

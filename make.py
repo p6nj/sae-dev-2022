@@ -12,4 +12,4 @@ else:
   elif arg == "server":
     system("cc server.c -o server && ./server")
   elif arg == "clean":
-    system("rm server \n rm log.txt \n rm client \n rm curses")
+    system("rm server; rm log.txt; rm client; rm curses")
